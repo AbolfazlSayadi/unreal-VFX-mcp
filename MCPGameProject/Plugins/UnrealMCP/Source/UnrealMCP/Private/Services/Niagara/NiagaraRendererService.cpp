@@ -479,19 +479,18 @@ bool FNiagaraService::SetRendererProperty(const FString& SystemPath, const FStri
             FNiagaraVariableAttributeBinding* Binding = StructProp->ContainerPtrToValuePtr<FNiagaraVariableAttributeBinding>(FoundRenderer);
             if (Binding)
             {
-                // Get emitter for context
-                UNiagaraEmitter* Emitter = EmitterHandle.GetInstance().Emitter;
-                FVersionedNiagaraEmitterBase EmitterBase(Emitter, EmitterData->Version.VersionGuid);
+                // UE 5.6: SetValue/CacheValues take FVersionedNiagaraEmitter
+                const FVersionedNiagaraEmitter VersionedEmitter = EmitterHandle.GetInstance();
 
                 // Get source mode from renderer
                 ENiagaraRendererSourceDataMode SourceMode = FoundRenderer->GetCurrentSourceMode();
 
                 // Set the binding value (e.g., "Particles.Color" or just "Color")
                 FName BindingName(*ValueStr);
-                Binding->SetValue(BindingName, EmitterBase, SourceMode);
+                Binding->SetValue(BindingName, VersionedEmitter, SourceMode);
 
                 // Cache values to ensure binding is properly resolved
-                Binding->CacheValues(EmitterBase, SourceMode);
+                Binding->CacheValues(VersionedEmitter, SourceMode);
 
                 UE_LOG(LogNiagaraService, Log, TEXT("Set attribute binding '%s' to '%s'"), *PropertyName, *ValueStr);
             }

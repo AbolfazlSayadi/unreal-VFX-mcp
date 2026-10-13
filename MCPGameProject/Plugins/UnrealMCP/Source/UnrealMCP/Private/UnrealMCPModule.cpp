@@ -10,7 +10,7 @@
 void FUnrealMCPModule::StartupModule()
 {
 	FUnrealMCPVfxDispatcher::Get().Initialize();
-	UE_LOG(LogTemp, Display, TEXT("Unreal MCP Module has started (Niagara VFX commands registered)"));
+	UE_LOG(LogTemp, Display, TEXT("Unreal MCP Module has started (Niagara, Material, Editor, Project commands registered)"));
 }
 
 void FUnrealMCPModule::ShutdownModule()

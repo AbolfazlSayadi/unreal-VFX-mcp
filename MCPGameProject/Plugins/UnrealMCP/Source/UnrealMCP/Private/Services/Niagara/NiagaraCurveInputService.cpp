@@ -817,9 +817,9 @@ static bool SetStatelessModuleCurveInput(
     // Mark the module for modification
     TargetModule->Modify();
 
-    // Set up the distribution for curve mode
+    // Set up the distribution for curve mode.
+    // UE 5.6 removed LookupValueMode / ENiagaraDistributionLookupValueMode from FNiagaraDistributionBase.
     DistributionPtr->Mode = ENiagaraDistributionMode::UniformCurve;
-    DistributionPtr->LookupValueMode = static_cast<uint8>(ENiagaraDistributionLookupValueMode::ParticlesNormalizedAge);
 
 #if WITH_EDITORONLY_DATA
     // Clear and populate the curve data

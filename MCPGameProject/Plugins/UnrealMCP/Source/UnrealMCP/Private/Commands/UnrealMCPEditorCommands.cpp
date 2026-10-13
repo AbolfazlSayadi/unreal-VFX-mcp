@@ -16,6 +16,9 @@
 #include "Engine/SpotLight.h"
 #include "Camera/CameraActor.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/LightComponent.h"
+#include "Components/PointLightComponent.h"
+#include "Components/SpotLightComponent.h"
 #include "EditorSubsystem.h"
 #include "Subsystems/EditorActorSubsystem.h"
 #include "Engine/Blueprint.h"
@@ -59,6 +62,10 @@ TSharedPtr<FJsonObject> FUnrealMCPEditorCommands::HandleCommand(const FString& C
     else if (CommandType == TEXT("set_actor_property"))
     {
         return HandleSetActorProperty(Params);
+    }
+    else if (CommandType == TEXT("set_light_property"))
+    {
+        return HandleSetLightProperty(Params);
     }
     // Blueprint actor spawning
     else if (CommandType == TEXT("spawn_blueprint_actor"))
@@ -110,9 +117,16 @@ TSharedPtr<FJsonObject> FUnrealMCPEditorCommands::HandleFindActorsByName(const T
     UGameplayStatics::GetAllActorsOfClass(GWorld, AActor::StaticClass(), AllActors);
     
     TArray<TSharedPtr<FJsonValue>> MatchingActors;
+    const bool bWildcard = Pattern.Contains(TEXT("*")) || Pattern.Contains(TEXT("?"));
     for (AActor* Actor : AllActors)
     {
-        if (Actor && Actor->GetName().Contains(Pattern))
+        if (!Actor)
+        {
+            continue;
+        }
+        const FString ActorName = Actor->GetName();
+        const bool bMatch = bWildcard ? ActorName.MatchesWildcard(Pattern) : ActorName.Contains(Pattern);
+        if (bMatch)
         {
             MatchingActors.Add(FUnrealMCPCommonUtils::ActorToJson(Actor));
         }
@@ -597,4 +611,116 @@ TSharedPtr<FJsonObject> FUnrealMCPEditorCommands::HandleTakeScreenshot(const TSh
     }
     
     return FUnrealMCPCommonUtils::CreateErrorResponse(TEXT("Failed to take screenshot"));
+}
+
+TSharedPtr<FJsonObject> FUnrealMCPEditorCommands::HandleSetLightProperty(const TSharedPtr<FJsonObject>& Params)
+{
+    FString ActorName;
+    if (!Params->TryGetStringField(TEXT("name"), ActorName))
+    {
+        return FUnrealMCPCommonUtils::CreateErrorResponse(TEXT("Missing 'name' parameter"));
+    }
+
+    FString PropertyName;
+    if (!Params->TryGetStringField(TEXT("property_name"), PropertyName))
+    {
+        return FUnrealMCPCommonUtils::CreateErrorResponse(TEXT("Missing 'property_name' parameter"));
+    }
+
+    FString PropertyValue;
+    if (Params->HasField(TEXT("property_value")))
+    {
+        const TSharedPtr<FJsonValue> ValueField = Params->Values.FindRef(TEXT("property_value"));
+        if (ValueField.IsValid() && ValueField->Type == EJson::Array)
+        {
+            const TArray<TSharedPtr<FJsonValue>>& Arr = ValueField->AsArray();
+            TArray<FString> Parts;
+            for (const TSharedPtr<FJsonValue>& Item : Arr)
+            {
+                Parts.Add(FString::SanitizeFloat(Item->AsNumber()));
+            }
+            PropertyValue = FString::Join(Parts, TEXT(","));
+        }
+        else if (ValueField.IsValid() && ValueField->Type == EJson::Number)
+        {
+            PropertyValue = FString::SanitizeFloat(ValueField->AsNumber());
+        }
+        else if (ValueField.IsValid() && ValueField->Type == EJson::Boolean)
+        {
+            PropertyValue = ValueField->AsBool() ? TEXT("true") : TEXT("false");
+        }
+        else
+        {
+            Params->TryGetStringField(TEXT("property_value"), PropertyValue);
+        }
+    }
+
+    TArray<AActor*> AllActors;
+    UGameplayStatics::GetAllActorsOfClass(GWorld, AActor::StaticClass(), AllActors);
+    AActor* Actor = nullptr;
+    for (AActor* Candidate : AllActors)
+    {
+        if (Candidate && (Candidate->GetName() == ActorName || Candidate->GetActorLabel() == ActorName))
+        {
+            Actor = Candidate;
+            break;
+        }
+    }
+
+    if (!Actor)
+    {
+        return FUnrealMCPCommonUtils::CreateErrorResponse(FString::Printf(TEXT("Actor not found: %s"), *ActorName));
+    }
+
+    ULightComponent* LightComponent = Actor->FindComponentByClass<ULightComponent>();
+    if (!LightComponent)
+    {
+        return FUnrealMCPCommonUtils::CreateErrorResponse(FString::Printf(TEXT("Cannot find light component on actor: %s"), *Actor->GetName()));
+    }
+
+    if (PropertyName.Equals(TEXT("Intensity"), ESearchCase::IgnoreCase))
+    {
+        LightComponent->SetIntensity(FCString::Atof(*PropertyValue));
+    }
+    else if (PropertyName.Equals(TEXT("LightColor"), ESearchCase::IgnoreCase) || PropertyName.Equals(TEXT("Color"), ESearchCase::IgnoreCase))
+    {
+        TArray<FString> ColorValues;
+        PropertyValue.ParseIntoArray(ColorValues, TEXT(","), true);
+        if (ColorValues.Num() < 3)
+        {
+            return FUnrealMCPCommonUtils::CreateErrorResponse(TEXT("Invalid color format. Expected R,G,B values."));
+        }
+        LightComponent->SetLightColor(FLinearColor(
+            FCString::Atof(*ColorValues[0]),
+            FCString::Atof(*ColorValues[1]),
+            FCString::Atof(*ColorValues[2])));
+    }
+    else if (PropertyName.Equals(TEXT("CastShadows"), ESearchCase::IgnoreCase))
+    {
+        LightComponent->SetCastShadows(PropertyValue.ToBool());
+    }
+    else if (PropertyName.Equals(TEXT("AttenuationRadius"), ESearchCase::IgnoreCase))
+    {
+        if (UPointLightComponent* PointLightComp = Cast<UPointLightComponent>(LightComponent))
+        {
+            PointLightComp->AttenuationRadius = FCString::Atof(*PropertyValue);
+            PointLightComp->MarkRenderStateDirty();
+        }
+        else
+        {
+            return FUnrealMCPCommonUtils::CreateErrorResponse(TEXT("AttenuationRadius is only applicable for point and spot lights"));
+        }
+    }
+    else
+    {
+        return FUnrealMCPCommonUtils::CreateErrorResponse(FString::Printf(TEXT("Unknown light property: %s. Supported: Intensity, LightColor, CastShadows, AttenuationRadius"), *PropertyName));
+    }
+
+    LightComponent->MarkPackageDirty();
+
+    TSharedPtr<FJsonObject> ResultObj = MakeShared<FJsonObject>();
+    ResultObj->SetStringField(TEXT("name"), Actor->GetName());
+    ResultObj->SetStringField(TEXT("property_name"), PropertyName);
+    ResultObj->SetStringField(TEXT("property_value"), PropertyValue);
+    return ResultObj;
 } 

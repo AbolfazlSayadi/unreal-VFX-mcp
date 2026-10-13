@@ -47,6 +47,7 @@ public class UnrealMCP : ModuleRules
 				"CoreUObject",
 				"Engine",
 				"InputCore",
+				"EnhancedInput",
 				"Networking",
 				"Sockets",
 				"HTTP",
@@ -71,7 +72,10 @@ public class UnrealMCP : ModuleRules
 				"KismetCompiler",
 				"BlueprintGraph",
 				"Projects",
-				"AssetRegistry"
+				"AssetRegistry",
+				"EnhancedInput",
+				"RenderCore",
+				"RHI"
 			}
 		);
 		
@@ -85,6 +89,9 @@ public class UnrealMCP : ModuleRules
 					"BlueprintEditorLibrary", // For Blueprint utilities
 					"UMGEditor",           // For WidgetBlueprint.h and other UMG editor functionality
 					"AssetTools",
+					"MaterialEditor",
+					"EditorFramework",
+					"LevelEditor",
 					"Niagara",
 					"NiagaraCore",
 					"NiagaraEditor",
