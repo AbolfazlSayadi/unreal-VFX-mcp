@@ -21,6 +21,24 @@ public class UnrealMCP : ModuleRules
 				// ... add other private include paths required here ...
 			}
 		);
+
+		string NiagaraEditorPrivatePath = System.IO.Path.GetFullPath(System.IO.Path.Combine(EngineDirectory, "Plugins", "FX", "Niagara", "Source", "NiagaraEditor", "Private"));
+		if (System.IO.Directory.Exists(NiagaraEditorPrivatePath))
+		{
+			PrivateIncludePaths.Add(NiagaraEditorPrivatePath);
+		}
+
+		string NiagaraInternalPath = System.IO.Path.GetFullPath(System.IO.Path.Combine(EngineDirectory, "Plugins", "FX", "Niagara", "Source", "Niagara", "Internal"));
+		if (System.IO.Directory.Exists(NiagaraInternalPath))
+		{
+			PrivateIncludePaths.Add(NiagaraInternalPath);
+		}
+
+		string NiagaraShaderInternalPath = System.IO.Path.GetFullPath(System.IO.Path.Combine(EngineDirectory, "Plugins", "FX", "Niagara", "Source", "NiagaraShader", "Internal"));
+		if (System.IO.Directory.Exists(NiagaraShaderInternalPath))
+		{
+			PrivateIncludePaths.Add(NiagaraShaderInternalPath);
+		}
 		
 		PublicDependencyModuleNames.AddRange(
 			new string[]
@@ -34,7 +52,9 @@ public class UnrealMCP : ModuleRules
 				"HTTP",
 				"Json",
 				"JsonUtilities",
-				"DeveloperSettings"
+				"DeveloperSettings",
+				"EditorScriptingUtilities",
+				"AssetTools"
 			}
 		);
 		
@@ -63,7 +83,12 @@ public class UnrealMCP : ModuleRules
 					"PropertyEditor",      // For widget property editing
 					"ToolMenus",           // For editor UI
 					"BlueprintEditorLibrary", // For Blueprint utilities
-					"UMGEditor"           // For WidgetBlueprint.h and other UMG editor functionality
+					"UMGEditor",           // For WidgetBlueprint.h and other UMG editor functionality
+					"AssetTools",
+					"Niagara",
+					"NiagaraCore",
+					"NiagaraEditor",
+					"NiagaraShader"
 				}
 			);
 		}

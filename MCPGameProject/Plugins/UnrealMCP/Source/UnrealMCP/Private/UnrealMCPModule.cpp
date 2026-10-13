@@ -1,5 +1,6 @@
 #include "UnrealMCPModule.h"
 #include "UnrealMCPBridge.h"
+#include "Commands/UnrealMCPVfxDispatcher.h"
 #include "Modules/ModuleManager.h"
 #include "EditorSubsystem.h"
 #include "Editor.h"
@@ -8,11 +9,13 @@
 
 void FUnrealMCPModule::StartupModule()
 {
-	UE_LOG(LogTemp, Display, TEXT("Unreal MCP Module has started"));
+	FUnrealMCPVfxDispatcher::Get().Initialize();
+	UE_LOG(LogTemp, Display, TEXT("Unreal MCP Module has started (Niagara VFX commands registered)"));
 }
 
 void FUnrealMCPModule::ShutdownModule()
 {
+	FUnrealMCPVfxDispatcher::Get().Shutdown();
 	UE_LOG(LogTemp, Display, TEXT("Unreal MCP Module has shut down"));
 }
 
