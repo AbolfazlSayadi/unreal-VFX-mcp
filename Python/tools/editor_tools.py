@@ -81,16 +81,18 @@ def register_editor_tools(mcp: FastMCP):
         name: str,
         type: str,
         location: List[float] = [0.0, 0.0, 0.0],
-        rotation: List[float] = [0.0, 0.0, 0.0]
+        rotation: List[float] = [0.0, 0.0, 0.0],
+        scale: List[float] = [1.0, 1.0, 1.0]
     ) -> Dict[str, Any]:
         """Create a new actor in the current level.
         
         Args:
             ctx: The MCP context
             name: The name to give the new actor (must be unique)
-            type: The type of actor to create (e.g. StaticMeshActor, PointLight)
+            type: The type of actor to create (e.g. StaticMeshActor, PointLight, CameraActor)
             location: The [x, y, z] world location to spawn at
             rotation: The [pitch, yaw, roll] rotation in degrees
+            scale: The [x, y, z] scale
             
         Returns:
             Dict containing the created actor's properties
@@ -108,11 +110,12 @@ def register_editor_tools(mcp: FastMCP):
                 "name": name,
                 "type": type.upper(),  # Make sure type is uppercase
                 "location": location,
-                "rotation": rotation
+                "rotation": rotation,
+                "scale": scale
             }
             
-            # Validate location and rotation formats
-            for param_name in ["location", "rotation"]:
+            # Validate location, rotation, and scale formats
+            for param_name in ["location", "rotation", "scale"]:
                 param_value = params[param_name]
                 if not isinstance(param_value, list) or len(param_value) != 3:
                     logger.error(f"Invalid {param_name} format: {param_value}. Must be a list of 3 float values.")
@@ -259,7 +262,110 @@ def register_editor_tools(mcp: FastMCP):
             logger.error(error_msg)
             return {"success": False, "message": error_msg}
 
-    # @mcp.tool() commented out because it's buggy
+    @mcp.tool()
+    def set_light_property(
+        ctx: Context,
+        name: str,
+        property_name: str,
+        property_value: str
+    ) -> Dict[str, Any]:
+        """
+        Set a light property on a light actor.
+
+        Args:
+            name: Light actor name
+            property_name: Intensity|LightColor|CastShadows|AttenuationRadius
+            property_value: Number, bool, or "R,G,B" for color (0-1)
+
+        Example:
+            set_light_property(name="PointLight_0", property_name="Intensity", property_value="5000")
+        """
+        from unreal_mcp_server import get_unreal_connection
+        try:
+            unreal = get_unreal_connection()
+            if not unreal:
+                return {"success": False, "message": "Failed to connect to Unreal Engine"}
+            return unreal.send_command("set_light_property", {
+                "name": name,
+                "property_name": property_name,
+                "property_value": property_value
+            }) or {}
+        except Exception as e:
+            logger.error(f"Error setting light property: {e}")
+            return {"success": False, "message": str(e)}
+
+    @mcp.tool()
+    def execute_console_command(ctx: Context, command: str) -> Dict[str, Any]:
+        """
+        Execute an Unreal console command and capture output.
+
+        Example:
+            execute_console_command("stat fps")
+        """
+        from unreal_mcp_server import get_unreal_connection
+        try:
+            unreal = get_unreal_connection()
+            if not unreal:
+                return {"success": False, "message": "Failed to connect to Unreal Engine"}
+            return unreal.send_command("execute_console_command", {"command": command}) or {}
+        except Exception as e:
+            logger.error(f"Error executing console command: {e}")
+            return {"success": False, "message": str(e)}
+
+    @mcp.tool()
+    def get_performance_stats(ctx: Context) -> Dict[str, Any]:
+        """
+        Get editor performance stats: FPS, GPU time, draw calls, and memory.
+
+        Example:
+            get_performance_stats()
+        """
+        from unreal_mcp_server import get_unreal_connection
+        try:
+            unreal = get_unreal_connection()
+            if not unreal:
+                return {"success": False, "message": "Failed to connect to Unreal Engine"}
+            return unreal.send_command("get_performance_stats", {}) or {}
+        except Exception as e:
+            logger.error(f"Error getting performance stats: {e}")
+            return {"success": False, "message": str(e)}
+
+    @mcp.tool()
+    def set_viewport_camera(
+        ctx: Context,
+        location: List[float] = None,
+        rotation: List[float] = None,
+        look_at: List[float] = None
+    ) -> Dict[str, Any]:
+        """
+        Set the editor viewport camera location and orientation.
+
+        Args:
+            location: [X, Y, Z] camera location
+            rotation: [Pitch, Yaw, Roll] in degrees
+            look_at: Optional [X, Y, Z] point to look at (overrides rotation)
+
+        Example:
+            set_viewport_camera(location=[0, -400, 200], look_at=[0, 0, 100])
+        """
+        from unreal_mcp_server import get_unreal_connection
+        try:
+            unreal = get_unreal_connection()
+            if not unreal:
+                return {"success": False, "message": "Failed to connect to Unreal Engine"}
+            params = {}
+            if location is not None:
+                params["location"] = location
+            if rotation is not None:
+                params["rotation"] = rotation
+            if look_at is not None:
+                params["look_at"] = look_at
+            return unreal.send_command("set_viewport_camera", params) or {}
+        except Exception as e:
+            logger.error(f"Error setting viewport camera: {e}")
+            return {"success": False, "message": str(e)}
+
+    @mcp.tool()
     def focus_viewport(
         ctx: Context,
         target: str = None,

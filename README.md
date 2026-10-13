@@ -4,7 +4,7 @@
 <span style="color: #555555">unreal-mcp</span>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Unreal Engine](https://img.shields.io/badge/Unreal%20Engine-5.5%2B-orange)](https://www.unrealengine.com)
+[![Unreal Engine](https://img.shields.io/badge/Unreal%20Engine-5.6%2B-orange)](https://www.unrealengine.com)
 [![Python](https://img.shields.io/badge/Python-3.12%2B-yellow)](https://www.python.org)
 [![Status](https://img.shields.io/badge/Status-Experimental-red)](https://github.com/chongdashu/unreal-mcp)
 
@@ -31,6 +31,9 @@ The Unreal MCP integration provides comprehensive tools for controlling Unreal E
 | **Blueprint Development** | • Create new Blueprint classes with custom components<br>• Add and configure components (mesh, camera, light, etc.)<br>• Set component properties and physics settings<br>• Compile Blueprints and spawn Blueprint actors<br>• Create input mappings for player controls |
 | **Blueprint Node Graph** | • Add event nodes (BeginPlay, Tick, etc.)<br>• Create function call nodes and connect them<br>• Add variables with custom types and default values<br>• Create component and self references<br>• Find and manage nodes in the graph |
 | **Editor Control** | • Focus viewport on specific actors or locations<br>• Control viewport camera orientation and distance |
+| **Niagara VFX** | • Create systems/emitters, add modules, set inputs, parameters, renderers<br>• Search modules, compile, diagnostics, spawn Niagara actors in the level |
+
+VFX design skills (reference analysis, technique selection, procedural textures) live under `.cursor/skills/`. See [Docs/VFX.md](Docs/VFX.md).
 
 All these capabilities are accessible through natural language commands via AI assistants, making it easy to automate and control Unreal Engine workflows.
 
@@ -70,7 +73,7 @@ All these capabilities are accessible through natural language commands via AI a
 ## 🚀 Quick Start Guide
 
 ### Prerequisites
-- Unreal Engine 5.5+
+- Unreal Engine 5.6+ (Niagara VFX MCP commands; sample project uses 5.6)
 - Python 3.12+
 - MCP Client (e.g., Claude Desktop, Cursor, Windsurf)
 

@@ -5,7 +5,8 @@ alwaysApply: false
 ---
 # Working with Unreal Engine
 
-- We are using Unreal Engine 5.5.4, so be extremely cautious of using deprecated or outdated APIs, includes or practices.
+- We are using Unreal Engine 5.6, so be extremely cautious of using deprecated or outdated APIs, includes or practices.
+- Niagara VFX MCP commands are registered via `FUnrealMCPCommandRegistry` at module startup; Python tools live in `Python/tools/niagara_tools.py`.
 
 ## Coordinate System
 

@@ -57,6 +57,7 @@
 #include "Commands/UnrealMCPProjectCommands.h"
 #include "Commands/UnrealMCPCommonUtils.h"
 #include "Commands/UnrealMCPUMGCommands.h"
+#include "Commands/UnrealMCPCommandRegistry.h"
 
 // Default settings
 #define MCP_SERVER_HOST "127.0.0.1"
@@ -232,6 +233,7 @@ FString UUnrealMCPBridge::ExecuteCommand(const FString& CommandType, const TShar
                      CommandType == TEXT("set_actor_transform") ||
                      CommandType == TEXT("get_actor_properties") ||
                      CommandType == TEXT("set_actor_property") ||
+                     CommandType == TEXT("set_light_property") ||
                      CommandType == TEXT("spawn_blueprint_actor") ||
                      CommandType == TEXT("focus_viewport") || 
                      CommandType == TEXT("take_screenshot"))
@@ -277,6 +279,28 @@ FString UUnrealMCPBridge::ExecuteCommand(const FString& CommandType, const TShar
                      CommandType == TEXT("add_widget_to_viewport"))
             {
                 ResultJson = UMGCommands->HandleCommand(CommandType, Params);
+            }
+            // Niagara / VFX commands (registry)
+            else if (FUnrealMCPCommandRegistry::Get().IsCommandRegistered(CommandType))
+            {
+                FString ParamsString;
+                TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&ParamsString);
+                FJsonSerializer::Serialize(Params.ToSharedRef(), Writer.Get());
+
+                FString CommandResult = FUnrealMCPCommandRegistry::Get().ExecuteCommand(CommandType, ParamsString);
+
+                TSharedPtr<FJsonObject> ParsedResult;
+                TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(CommandResult);
+                if (FJsonSerializer::Deserialize(Reader, ParsedResult) && ParsedResult.IsValid())
+                {
+                    ResultJson = ParsedResult;
+                }
+                else
+                {
+                    ResultJson = MakeShareable(new FJsonObject);
+                    ResultJson->SetBoolField(TEXT("success"), false);
+                    ResultJson->SetStringField(TEXT("error"), TEXT("Failed to parse Niagara command result"));
+                }
             }
             else
             {
